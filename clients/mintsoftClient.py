@@ -92,7 +92,7 @@ class MintsoftAsnClient:
         return None
     
     def get_asns(self, params):
-        url = f"{self.BASE_URL}/api/ASN/List?ClientId={params.get("ClientId")}&Limit=1"
+        url = f"{self.BASE_URL}/api/ASN/List?ClientId={params.get('ClientId')}&Limit=1"
 
         if params.get("StatusId"):
             url += f"&ASNStatusId={params.get("StatusId")}&SinceLastUpdated={params.get("SinceLastUpdated")}"
