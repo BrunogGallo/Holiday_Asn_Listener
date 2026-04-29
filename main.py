@@ -158,27 +158,28 @@ def chequear_emails():
         for msg in mailbox.fetch(AND(**criteria_kwargs), mark_seen=True, bulk=True):
             subject = (msg.subject or "").strip()
 
-            # Log de diagnóstico: vemos exactamente qué devuelve IMAP
-            print(f"🔍 IMAP yielded | uid={msg.uid!r} | from={msg.from_!r} | subject={subject!r}")
-
-            # Dedupe por UID: si ya procesamos este UID en esta corrida,
-            # no lo volvemos a tocar (red de seguridad).
+            # Dedupe por UID (red de seguridad por si IMAP yieldea dos veces).
             if msg.uid and msg.uid in PROCESSED_UIDS:
-                print(f"⚠️  UID ya procesado en esta corrida, salto | uid={msg.uid}")
                 continue
             if msg.uid:
                 PROCESSED_UIDS.add(msg.uid)
 
-            # Defensa contra "mensajes fantasma": IMAP a veces devuelve
-            # mensajes parciales o internos sin from/subject. Saltamos.
+            # Workspace genera copias internas (scanners DLP, auditoría, etc.)
+            # que llegan al INBOX con headers vacíos. Las ignoramos en silencio.
             if not msg.from_ or not subject:
-                print(f"⚠️  Mensaje sin from/subject saltado | uid={msg.uid}")
+                continue
+
+            # Tu lógica solo procesa mails con adjunto xlsx/xls/csv;
+            # si no tiene, también lo ignoramos sin ruido.
+            if not any(
+                (a.filename or "").lower().endswith((".xlsx", ".xls", ".csv"))
+                for a in msg.attachments
+            ):
                 continue
 
             # Match exacto del subject (IMAP SUBJECT hace substring,
             # acá garantizamos coincidencia exacta).
             if IMAP_SUBJECT_FILTER and subject != IMAP_SUBJECT_FILTER:
-                print(f"⚠️  Subject no coincide exacto | uid={msg.uid} | subject={subject!r}")
                 continue
 
             email_data = {
