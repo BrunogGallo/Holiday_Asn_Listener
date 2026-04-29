@@ -23,6 +23,12 @@ IMAP_SUBJECT_FILTER = os.environ.get("IMAP_SUBJECT_FILTER")  # opcional
 executor = ThreadPoolExecutor(max_workers=10)
 service = MintsoftAsnService()
 
+# UIDs ya procesados en esta corrida del proceso. Es una red de seguridad
+# por si IMAP/imap-tools devuelve el mismo mensaje dos veces. Como
+# mark_seen=True el dedupe principal lo hace el server; esto cubre el
+# caso del mismo fetch yieldando dos veces el mismo UID.
+PROCESSED_UIDS: set[str] = set()
+
 
 # ============================================================
 # Pipeline de procesamiento (2 etapas en 2 threads):
@@ -67,8 +73,18 @@ def extraer_datos_archivo(email_data):
         # ------------------------------------------------------
         filas = []  # placeholder
 
+        # Armamos el dict que recibe la etapa 2. Es el contrato entre
+        # extraer_datos_archivo() y formatear_y_enviar().
+        datos_extraidos = {
+            "email_uid": email_data["uid"],
+            "remitente": email_data["from"],
+            "filename": asn_data["filename"],
+            "raw_bytes": asn_data["content"],
+            "filas": filas,
+        }
+
         print(f"✅ Etapa 1 OK | archivo={asn_data['filename']} | filas={len(filas)}")
-        return asn_data
+        return datos_extraidos
 
     except Exception as e:
         print(f"❌ Error en etapa 1 (extracción): {e}")
@@ -140,11 +156,36 @@ def chequear_emails():
         IMAP_USERNAME, IMAP_PASSWORD, initial_folder=IMAP_FOLDER
     ) as mailbox:
         for msg in mailbox.fetch(AND(**criteria_kwargs), mark_seen=True, bulk=True):
+            subject = (msg.subject or "").strip()
+
+            # Log de diagnóstico: vemos exactamente qué devuelve IMAP
+            print(f"🔍 IMAP yielded | uid={msg.uid!r} | from={msg.from_!r} | subject={subject!r}")
+
+            # Dedupe por UID: si ya procesamos este UID en esta corrida,
+            # no lo volvemos a tocar (red de seguridad).
+            if msg.uid and msg.uid in PROCESSED_UIDS:
+                print(f"⚠️  UID ya procesado en esta corrida, salto | uid={msg.uid}")
+                continue
+            if msg.uid:
+                PROCESSED_UIDS.add(msg.uid)
+
+            # Defensa contra "mensajes fantasma": IMAP a veces devuelve
+            # mensajes parciales o internos sin from/subject. Saltamos.
+            if not msg.from_ or not subject:
+                print(f"⚠️  Mensaje sin from/subject saltado | uid={msg.uid}")
+                continue
+
+            # Match exacto del subject (IMAP SUBJECT hace substring,
+            # acá garantizamos coincidencia exacta).
+            if IMAP_SUBJECT_FILTER and subject != IMAP_SUBJECT_FILTER:
+                print(f"⚠️  Subject no coincide exacto | uid={msg.uid} | subject={subject!r}")
+                continue
+
             email_data = {
                 "uid": msg.uid,
                 "from": msg.from_,
                 "to": list(msg.to),
-                "subject": msg.subject or "",
+                "subject": subject,
                 "text": msg.text or "",
                 "html": msg.html or None,
                 "attachments": [
