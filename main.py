@@ -4,6 +4,7 @@ import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from imap_tools import MailBox, AND
+from services.asn_service import MintsoftAsnService
 
 app = Flask(__name__)
 
@@ -20,6 +21,7 @@ IMAP_FROM_FILTER = os.environ.get("IMAP_FROM_FILTER")        # opcional
 IMAP_SUBJECT_FILTER = os.environ.get("IMAP_SUBJECT_FILTER")  # opcional
 
 executor = ThreadPoolExecutor(max_workers=10)
+service = MintsoftAsnService()
 
 
 # ============================================================
@@ -30,6 +32,7 @@ executor = ThreadPoolExecutor(max_workers=10)
 # se dispara la 2 en otro thread del executor.
 # ============================================================
 def extraer_datos_archivo(email_data):
+    
     """Etapa 1: levanta el adjunto (xlsx/csv) y devuelve los datos extraídos.
 
     Retorna un dict con la info que necesita la etapa 2, o None si no hay
@@ -50,9 +53,7 @@ def extraer_datos_archivo(email_data):
             print("⚠️  No hay adjunto xlsx/xls/csv; nada que procesar")
             return None
 
-        # 2) Leer el archivo en memoria.
-        #    `archivo["content"]` ya son los bytes del adjunto.
-        contenido_bytes = asn_data["content"]
+        service.check_against_current_asns(asn_data)
 
         # ------------------------------------------------------
         # TODO: parsear el archivo según extensión

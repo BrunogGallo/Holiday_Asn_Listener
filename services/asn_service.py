@@ -64,3 +64,5 @@ class MintsoftAsnService:
         print(asn_number)
         print(asn_cartons)
         print(asn_items)
+
+        return None
