@@ -97,7 +97,7 @@ class MintsoftAsnClient:
         response = requests.get(url, headers=self.headers())
         response.raise_for_status()
 
-        return(response)
+        return(response.json())
     
     def get_asn_details(self, id):
         url = f"{self.BASE_URL}/api/ASN/{id}"
