@@ -101,7 +101,6 @@ def formatear_y_enviar(datos_extraidos):
         #   filas_destino = transformar(datos_extraidos["filas"])
         #   archivo_salida = generar_xlsx(filas_destino)   # o csv/json/etc
         # ------------------------------------------------------
-        archivo_salida = None  # placeholder (bytes del archivo final)
 
         # ------------------------------------------------------
         # TODO: reenviar por mail (cuando definas el destinatario/canal)

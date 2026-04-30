@@ -91,13 +91,10 @@ class MintsoftAsnClient:
 
         return None
     
-    def get_asns(self, params):
-        url = f"{self.BASE_URL}/api/ASN/List?ClientId={params.get('ClientId')}&Limit=1"
+    def get_asns(self):
+        url = f"{self.BASE_URL}/api/ASN/List?ClientId=4"
 
-        if params.get("StatusId"):
-            url += f"&ASNStatusId={params.get("StatusId")}&SinceLastUpdated={params.get("SinceLastUpdated")}"
-
-        response = requests.get(url, headers=self._headers())
+        response = requests.get(url, headers=self.headers())
         response.raise_for_status()
 
         return(response)
@@ -105,14 +102,14 @@ class MintsoftAsnClient:
     def get_asn_details(self, id):
         url = f"{self.BASE_URL}/api/ASN/{id}"
 
-        response = requests.get(url, headers = self._headers())
+        response = requests.get(url, headers = self.headers())
 
         return response.json()
     
     def create_asn(self, data):
         url = f"{self.BASE_URL}/api/ASN"
 
-        response = requests.put(url, json=data, headers=self._headers())
+        response = requests.put(url, json=data, headers=self.headers())
         response.raise_for_status()
 
         return response

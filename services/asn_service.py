@@ -24,7 +24,7 @@ FMT = "%m/%d/%Y %I:%M:%S %p"
 class MintsoftAsnService:
 
     def __init__(self):
-        self.mint_o = MintsoftAsnClient()
+        self.client = MintsoftAsnClient()
 
     def check_against_current_asns(self, asn_data):
         # Extraigo bytes del file
@@ -50,19 +50,35 @@ class MintsoftAsnService:
         sku_dict = qty_per_sku.to_dict(orient='records')
 
         asn_cartons = []
-
         # Crear las cajas con formato: asn_number - numero de caja
         for i in range(1, carton_amount + 1):
             asn_cartons.append(f"{asn_number}-{i}")
 
         asn_items = []
-
+        # Almacenamos SKUs y cantidades del sku
         for sku in sku_dict:
             asn_items.append(sku)
 
         print(po_number)
         print(asn_number)
         print(asn_cartons)
+        
         print(asn_items)
+        print(sku_dict)
+
+        current_mint_asns = self.client.get_asns()
+
+        asn_exists = any(item.get("POReference") == asn_number for item in current_mint_asns)
+
+        if asn_exists:
+            print("ASN ya cargado en Mintsoft")
+            return None
+        
+        else:
+            print("ASN no existe en Mintsoft, cargando informacion...")
+
+
+
+
 
         return None
