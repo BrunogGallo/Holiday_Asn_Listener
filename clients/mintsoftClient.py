@@ -84,10 +84,16 @@ class MintsoftAsnClient:
 
             return True
 
-    def create_carton(self, carton_data, client_id):
-        url = f'{self.BASE_URL}/api/StorageMedia/CreateCarton?autoGenerateSSCC=false&clientId={client_id}'
+    def create_carton(self, carton_data):
+        url = f'{self.BASE_URL}/api/StorageMedia/CreateCarton?autoGenerateSSCC=false&clientId=4'
 
         r = requests.post(url, json = carton_data, headers=self.headers())
+
+        if r.status_code == 200:
+            print("Caja creada con exito")
+
+        else:
+            print(r.json())
 
         return None
     
@@ -110,6 +116,11 @@ class MintsoftAsnClient:
         url = f"{self.BASE_URL}/api/ASN"
 
         response = requests.put(url, json=data, headers=self.headers())
-        response.raise_for_status()
+        
+        if response.status_code == 200:
+            print("Caja creada con exito")
+        
+        else:
+            print(response.json())
 
-        return response
+        return None

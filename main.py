@@ -59,19 +59,7 @@ def extraer_datos_archivo(email_data):
             print("⚠️  No hay adjunto xlsx/xls/csv; nada que procesar")
             return None
 
-        service.check_against_current_asns(asn_data)
-
-        # ------------------------------------------------------
-        # TODO: parsear el archivo según extensión
-        #   import pandas as pd
-        #   from io import BytesIO
-        #   if nombre.endswith(".csv"):
-        #       df = pd.read_csv(BytesIO(contenido_bytes))
-        #   else:
-        #       df = pd.read_excel(BytesIO(contenido_bytes))
-        #   filas = df.to_dict(orient="records")
-        # ------------------------------------------------------
-        filas = []  # placeholder
+        service.mintsoft_asn_processing(asn_data)
 
         # Armamos el dict que recibe la etapa 2. Es el contrato entre
         # extraer_datos_archivo() y formatear_y_enviar().
@@ -80,10 +68,9 @@ def extraer_datos_archivo(email_data):
             "remitente": email_data["from"],
             "filename": asn_data["filename"],
             "raw_bytes": asn_data["content"],
-            "filas": filas,
         }
 
-        print(f"✅ Etapa 1 OK | archivo={asn_data['filename']} | filas={len(filas)}")
+        print(f"✅ Etapa 1 OK | archivo={asn_data['filename']}")
         return datos_extraidos
 
     except Exception as e:

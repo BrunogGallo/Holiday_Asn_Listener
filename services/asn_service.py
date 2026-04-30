@@ -26,7 +26,24 @@ class MintsoftAsnService:
     def __init__(self):
         self.client = MintsoftAsnClient()
 
-    def check_against_current_asns(self, asn_data):
+    
+    def create_cartons(self, asn_cartons):
+        
+        for carton in asn_cartons:
+            
+            carton_data = {
+                "WarehouseId": 3,
+                "StorageMediaName": "Stock",
+                "Code": carton,
+                "LocationId": 7
+            }
+            
+            print(f"Creando la caja - {carton}")
+            self.client.create_carton(carton_data)
+        
+        return None
+    
+    def mintsoft_asn_processing(self, asn_data):
         # Extraigo bytes del file
         content = asn_data["content"]
         file_name = asn_data["filename"].lower()
@@ -47,27 +64,15 @@ class MintsoftAsnService:
         qty_per_sku.columns = ["SKU", "Quantity"]
 
         # Convertir a diccionario { SKU: Cantidad }
-        sku_dict = qty_per_sku.to_dict(orient='records')
+        asn_items = qty_per_sku.to_dict(orient='records')
 
         asn_cartons = []
         # Crear las cajas con formato: asn_number - numero de caja
         for i in range(1, carton_amount + 1):
             asn_cartons.append(f"{asn_number}-{i}")
 
-        asn_items = []
-        # Almacenamos SKUs y cantidades del sku
-        for sku in sku_dict:
-            asn_items.append(sku)
-
-        print(po_number)
-        print(asn_number)
-        print(asn_cartons)
-        
-        print(asn_items)
-        print(sku_dict)
-
+        # Comparacion para ver si ese ASN ya esta cargado en Mintsoft
         current_mint_asns = self.client.get_asns()
-
         asn_exists = any(item.get("POReference") == asn_number for item in current_mint_asns)
 
         if asn_exists:
@@ -77,8 +82,23 @@ class MintsoftAsnService:
         else:
             print("ASN no existe en Mintsoft, cargando informacion...")
 
+            print("Creando cajas")
+            self.create_cartons(asn_cartons)
 
+            print(f"Creando ASN - {asn_number}")
 
+            asn_data = {
+                "WarehouseId": 3,
+                "POReference": asn_number, #AsnNumber
+                "Supplier": "XoroSoft Migration",
+                "EstimatedDelivery": "",
+                "GoodsInType": "Carton",
+                "Quantity": len(asn_cartons),
+                "ClientId": 4, # 4 para Holiday Company
+                "Comments": str(asn_cartons).replace("'", "").replace("[", "").replace("]", ""),
+                "Items": asn_items
+            }
 
+            self.client.create_asn(asn_data)
 
         return None
