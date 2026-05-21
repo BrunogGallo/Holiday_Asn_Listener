@@ -2,9 +2,12 @@ import sys
 import os
 import io
 import json
+import csv
+from pathlib import Path
 import pandas as pd
 from datetime import datetime, timedelta
 from clients.mintsoftClient import MintsoftAsnClient
+
 
 
 # Esto obtiene la ruta de la carpeta "XorosoftMintsoft" (la raíz)
@@ -88,7 +91,7 @@ class MintsoftAsnService:
             print(f"Creando ASN - {asn_number}")
 
             asn_data = {
-                "WarehouseId": 3,
+                "WarehouseId": 3, #General / Wholesale
                 "POReference": asn_number, #AsnNumber
                 "Supplier": "XoroSoft Migration",
                 "EstimatedDelivery": "",
@@ -101,4 +104,56 @@ class MintsoftAsnService:
 
             self.client.create_asn(asn_data)
 
+            xoro_template_info = {
+                "asn_number": asn_number,
+                "po_number": po_number,
+                "asn_items": asn_items,
+            }
+
+            self.prepare_xoro_asn_template(xoro_template_info)
         return None
+    
+    def prepare_xoro_asn_template(self, data):
+        XORO_STORE_NAME = "USA WAREHOUSE"
+        XORO_LOCATION_NAME = "USA WAREHOUSE"
+        XORO_CSV_COLUMNS = [
+            "StoreName",
+            "AsnNumber",
+            "PONumber",
+            "ItemNumber",
+            "Qty",
+            "LocationName",
+            "CreditMemoNumber",
+            "ItemIdentifierCode",
+            "VendorBillNumber",
+            "ImportError",
+        ]
+
+        asn_number = data["asn_number"]
+        po_number = data["po_number"]
+        items = data["asn_items"]
+
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"xoro_asn_{asn_number}.csv"
+
+        with output_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=XORO_CSV_COLUMNS)
+            writer.writeheader() # Escribe los encabezados del template
+            for item in items: # Escribe cada linea del ASN
+                writer.writerow({ 
+                    "StoreName": XORO_STORE_NAME,
+                    "AsnNumber": asn_number,
+                    "PONumber": po_number,
+                    "ItemNumber": item["SKU"],
+                    "Qty": item["Quantity"],
+                    "LocationName": XORO_LOCATION_NAME,
+                    "CreditMemoNumber": "",
+                    "ItemIdentifierCode": "",
+                    "VendorBillNumber": "",
+                    "ImportError": "",
+                })
+
+        print(f"Xoro ASN template generated: {output_path}")
+        return output_path
+
