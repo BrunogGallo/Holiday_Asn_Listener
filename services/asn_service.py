@@ -70,14 +70,7 @@ class MintsoftAsnService:
 
 
     def mintsoft_asn_processing(self, attachment):
-        """
-        Process an ASN email attachment, push it to Mintsoft, build a Xoro
-        upload CSV and email that CSV to the configured recipient.
 
-        Args:
-            attachment: dict with {"content": bytes, "filename": str}
-                        as produced by the email-ingestion step.
-        """
         # Extraigo bytes del file
         content = attachment["content"]
         file_name = attachment["filename"].lower()
@@ -145,19 +138,6 @@ class MintsoftAsnService:
 
 
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
-        """
-        Build a Xoro ASN upload CSV from parsed ASN data.
-
-        Args:
-            data: dict with keys
-                - asn_number (str)
-                - po_number  (str)
-                - asn_items  (list of {"SKU": str, "Quantity": int})
-            output_dir: folder where the CSV will be written.
-
-        Returns:
-            pathlib.Path to the generated CSV.
-        """
         asn_number = data["asn_number"]
         po_number = data["po_number"]
         items = data["asn_items"]
@@ -180,12 +160,9 @@ class MintsoftAsnService:
                     "AsnNumber": asn_number,
                     "PONumber": po_number,
                     "ItemNumber": item["SKU"],
-                    "Qty": item["Quantity"],
+                    "QtyToReceive": item["Quantity"],
                     "LocationName": XORO_LOCATION_NAME,
-                    "CreditMemoNumber": "",
-                    "ItemIdentifierCode": "",
-                    "VendorBillNumber": "",
-                    "ImportError": "",
+                    "ThirdPartyRefNo": "N/A"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
@@ -193,12 +170,6 @@ class MintsoftAsnService:
 
 
     def send_xoro_csv_email(self, csv_path, asn_number, recipient):
-        """
-        Email the generated Xoro CSV as an attachment.
-
-        Reads SMTP host/port/user/password from environment variables so
-        credentials never live in the source tree.
-        """
         if not SMTP_USER or not SMTP_PASSWORD:
             raise RuntimeError(
                 "SMTP_USER / SMTP_PASSWORD env vars are not set; cannot send email."
@@ -223,12 +194,6 @@ class MintsoftAsnService:
                 filename=csv_path.name,
             )
 
-        # SMTP_SSL on 465 (Gmail / many providers).
-        # If your provider uses STARTTLS on 587, swap this block for:
-        #   with smtplib.SMTP(SMTP_HOST, 587) as smtp:
-        #       smtp.starttls()
-        #       smtp.login(SMTP_USER, SMTP_PASSWORD)
-        #       smtp.send_message(msg)
         with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as smtp:
             smtp.login(SMTP_USER, SMTP_PASSWORD)
             smtp.send_message(msg)
