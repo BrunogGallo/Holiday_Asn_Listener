@@ -160,7 +160,7 @@ class MintsoftAsnService:
                     "ItemNumber": item["SKU"],
                     "QtyToReceive": item["Quantity"],
                     "LocationName": XORO_LOCATION_NAME,
-                    "ThirdPartyRefNo": "N/A"
+                    "ThirdPartyRefNo": asn_number
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
