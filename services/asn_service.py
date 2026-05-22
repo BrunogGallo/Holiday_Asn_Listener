@@ -32,12 +32,10 @@ XORO_CSV_COLUMNS = [
     "AsnNumber",
     "PONumber",
     "ItemNumber",
-    "Qty",
+    "QtyToReceive",
     "LocationName",
-    "CreditMemoNumber",
-    "ItemIdentifierCode",
-    "VendorBillNumber",
-    "ImportError",
+    "ThirdPartyRefNo"
+
 ]
 
 # --- SMTP / email config ----------------------------------------------------
