@@ -34,7 +34,8 @@ XORO_CSV_COLUMNS = [
     "ItemNumber",
     "QtyToReceive",
     "LocationName",
-    "ThirdPartyRefNo"
+    "ThirdPartyRefNo",
+    "ThirdPartySource"
 
 ]
 
@@ -160,7 +161,8 @@ class MintsoftAsnService:
                     "ItemNumber": item["SKU"],
                     "QtyToReceive": item["Quantity"],
                     "LocationName": XORO_LOCATION_NAME,
-                    "ThirdPartyRefNo": asn_number
+                    "ThirdPartyRefNo": asn_number,
+                    "ThirdPartySource": "Mintsoft"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
