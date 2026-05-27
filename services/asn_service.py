@@ -83,7 +83,7 @@ class MintsoftAsnService:
 
         po_number = df.iloc[1, 0]
         asn_number = df.iloc[2, 1]
-        carton_number = df.iloc[2, 6]
+        carton_number = df.iloc[:, 6]
         carton_amount = df.iloc[:, 5].nunique()
 
         qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
