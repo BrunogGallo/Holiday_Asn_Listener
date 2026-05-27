@@ -25,7 +25,6 @@ sys.path.insert(0, ROOT)
 FMT = "%m/%d/%Y %I:%M:%S %p"
 
 # --- Xoro template constants ------------------------------------------------
-XORO_STORE_NAME = "USA WAREHOUSE"
 XORO_LOCATION_NAME = "USA WAREHOUSE"
 XORO_CSV_COLUMNS = [
     "StoreName",
@@ -84,6 +83,7 @@ class MintsoftAsnService:
 
         po_number = df.iloc[1, 0]
         asn_number = df.iloc[2, 1]
+        carton_number = df.iloc[2, 6]
         carton_amount = df.iloc[:, 5].nunique()
 
         qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
@@ -129,6 +129,7 @@ class MintsoftAsnService:
             "asn_number": asn_number,
             "po_number": po_number,
             "asn_items": asn_items,
+            "carton_number": carton_number
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
@@ -139,6 +140,7 @@ class MintsoftAsnService:
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
         asn_number = data["asn_number"]
         po_number = data["po_number"]
+        carton_number = data["carton_number"]
         items = data["asn_items"]
 
         if not items:
@@ -153,16 +155,28 @@ class MintsoftAsnService:
         with output_path.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=XORO_CSV_COLUMNS)
             writer.writeheader()
+
+            if asn_number.startswith("TST"):
+                store_name = "Test Store"
+                location_name = "Test Location"
+            elif asn_number.startswith("USA"):
+                store_name = "USA Warehouse"
+                location_name = "USA WAREHOUSE"
+            else:
+                store_name = "Drop Ship"
+                location_name = "NS01"
+        
             for item in items:
                 writer.writerow({
-                    "StoreName": XORO_STORE_NAME,
+                    "StoreName": store_name,
                     "AsnNumber": asn_number,
                     "PONumber": po_number,
                     "ItemNumber": item["SKU"],
                     "QtyToReceive": item["Quantity"],
-                    "LocationName": XORO_LOCATION_NAME,
+                    "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
-                    "ThirdPartySource": "Mintsoft"
+                    "ThirdPartySource": "Mintsoft",
+                    "RefNumber": f"{asn_number}-{carton_number}"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
