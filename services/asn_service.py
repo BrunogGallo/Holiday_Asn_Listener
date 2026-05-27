@@ -34,8 +34,8 @@ XORO_CSV_COLUMNS = [
     "QtyToReceive",
     "LocationName",
     "ThirdPartyRefNo",
-    "ThirdPartySource"
-
+    "ThirdPartySource",
+    "RefNumber"
 ]
 
 # --- SMTP / email config ----------------------------------------------------
