@@ -81,10 +81,15 @@ class MintsoftAsnService:
         else:
             raise ValueError(f"Tipo de archivo no soportado: {file_name}")
 
-        po_number = df.iloc[1, 0]
-        asn_number = df.iloc[2, 1]
-        carton_number = df.iloc[:, 6]
+        po_number = df.iloc[1, 0] #2da fila, 1er columna
+        asn_number = df.iloc[1, 1] #2da fila, 2da columna
         carton_amount = df.iloc[:, 5].nunique()
+
+        carton_per_sku = (
+            df.groupby(df.columns[2])[df.columns[5]]
+            .apply(lambda s: ",".join(sorted(set(s.astype(str)))))
+            .to_dict()
+)
 
         qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
         qty_per_sku.columns = ["SKU", "Quantity"]
@@ -129,7 +134,7 @@ class MintsoftAsnService:
             "asn_number": asn_number,
             "po_number": po_number,
             "asn_items": asn_items,
-            "carton_number": carton_number
+            "carton_number": carton_per_sku
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
@@ -140,7 +145,7 @@ class MintsoftAsnService:
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
         asn_number = data["asn_number"]
         po_number = data["po_number"]
-        carton_number = data["carton_number"]
+        carton_number = data["carton_per_sku"]
         items = data["asn_items"]
 
         if not items:
@@ -158,7 +163,7 @@ class MintsoftAsnService:
 
             if asn_number.startswith("TST"):
                 store_name = "Test Store"
-                location_name = "Test Location"
+                location_name = "TEST"
             elif asn_number.startswith("USA"):
                 store_name = "USA Warehouse"
                 location_name = "USA WAREHOUSE"
