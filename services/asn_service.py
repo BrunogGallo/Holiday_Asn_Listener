@@ -134,7 +134,7 @@ class MintsoftAsnService:
             "asn_number": asn_number,
             "po_number": po_number,
             "asn_items": asn_items,
-            "carton_number": carton_per_sku
+            "carton_per_sku": carton_per_sku
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
