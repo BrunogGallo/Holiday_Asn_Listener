@@ -86,7 +86,7 @@ class MintsoftAsnService:
         carton_amount = df.iloc[:, 5].nunique()
 
         carton_per_sku = (
-            df.groupby(df.columns[2], df.columns[6])[df.columns[5]]
+            df.groupby([df.columns[2], df.columns[6]])[df.columns[5]]
             .apply(lambda s: ",".join(sorted(set(s.astype(str)))))
             .to_dict()
         )
