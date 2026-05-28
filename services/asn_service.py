@@ -91,12 +91,12 @@ class MintsoftAsnService:
             .to_dict()
         )
 
-        # qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
-        # qty_per_sku.columns = ["SKU", "Quantity"]
-        # asn_items = qty_per_sku.to_dict(orient="records")
+        qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
+        qty_per_sku.columns = ["SKU", "Quantity"]
+        asn_items = qty_per_sku.to_dict(orient="records")
 
         qty_per_sku_per_carton = df.groupby(df.columns[2], df.columns[5])[df.columns[6]].sum().reset_index()
-        qty_per_sku_per_carton.columns = ["SKU", "Carton", "Quantity"]
+        qty_per_sku_per_carton.columns = ["SKU", "Quantity"]
 
         # Lista de { "SKU": ..., "Quantity": ... }
         asn_items = qty_per_sku_per_carton.to_dict(orient="records")
