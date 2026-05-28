@@ -86,7 +86,7 @@ class MintsoftAsnService:
         carton_amount = df.iloc[:, 5].nunique()
 
         carton_per_sku = (
-            df.groupby(df.columns[2])[df.columns[5]]
+            df.groupby(df.columns[2], df.columns[6])[df.columns[5]]
             .apply(lambda s: ",".join(sorted(set(s.astype(str)))))
             .to_dict()
         )
@@ -98,7 +98,7 @@ class MintsoftAsnService:
         qty_per_sku_per_carton = df.groupby([df.columns[2], df.columns[5]])[df.columns[6]].sum().reset_index()
         qty_per_sku_per_carton.columns = ["SKU", "Carton", "Quantity"]
         qty_per_sku_per_carton = qty_per_sku_per_carton.drop(columns="Carton")
-        
+
         # Lista de { "SKU": ..., "Quantity": ... }
         asn_items = qty_per_sku_per_carton.to_dict(orient="records")
 
