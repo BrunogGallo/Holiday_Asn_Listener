@@ -145,7 +145,7 @@ class MintsoftAsnService:
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
         asn_number = data["asn_number"]
         po_number = data["po_number"]
-        carton_number = data["carton_per_sku"]
+        carton_per_sku = data["carton_per_sku"]
         items = data["asn_items"]
 
         if not items:
@@ -181,7 +181,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{asn_number}-{carton_number}"
+                    "RefNumber": f"{asn_number}-{carton_per_sku[item['SKU']]}"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
