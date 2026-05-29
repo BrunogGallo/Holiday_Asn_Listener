@@ -85,25 +85,10 @@ class MintsoftAsnService:
         asn_number = df.iloc[1, 1] #2da fila, 2da columna
         carton_amount = df.iloc[:, 5].nunique()
 
-        carton_per_sku = (
-            df.groupby([df.columns[2], df.columns[6]])[df.columns[5]]
-            .apply(lambda s: ",".join(sorted(set(s.astype(str)))))
-            .to_dict()
-        )
-
         # Listado de Info del ASN para subir a Mintsoft
         qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
         qty_per_sku.columns = ["SKU", "Quantity"]
         asn_items = qty_per_sku.to_dict(orient="records")
-
-        # Listado de Info del ASN para subir a Xorosoft
-        qty_per_sku_per_carton = (
-            df.groupby([df.columns[2], df.columns[5]])[df.columns[6]]
-            .sum()
-            .reset_index()
-        )
-        qty_per_sku_per_carton.columns = ["SKU", "Carton", "Quantity"]
-        xoro_lines = qty_per_sku_per_carton.to_dict(orient="records")
 
         # Crear las cajas con formato: asn_number - numero de caja
         asn_cartons = [f"{asn_number}-{i}" for i in range(1, carton_amount + 1)]
@@ -141,13 +126,13 @@ class MintsoftAsnService:
         xoro_template_info = {
             "asn_number": asn_number,
             "po_number": po_number,
-            "asn_items": xoro_lines,
+            "asn_items": asn_items,
+            "carton_amount": carton_amount + 1
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
 
         return None
-
 
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
         asn_number = data["asn_number"]
@@ -187,7 +172,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{asn_number}-{item["Carton"]}"
+                    "RefNumber": f"{asn_number}-{data["carton_amount"]}"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
