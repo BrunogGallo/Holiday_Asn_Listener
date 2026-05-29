@@ -177,7 +177,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{data["shipping_details"]}_{data["carton_amount"]} Cartons"
+                    "RefNumber": f"{data["shipping_detail"]}_{data["carton_amount"]} Cartons"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
