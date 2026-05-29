@@ -94,7 +94,7 @@ class MintsoftAsnService:
         asn_cartons = [f"{asn_number}-{i}" for i in range(1, carton_amount + 1)]
 
         # Delivery Date y Shipping Detail
-        delivery_date = df.iloc[0, 9]
+        delivery_date = df.columns[9]
         shipping_detail = df.iloc[1, 6]
 
         # Comparacion para ver si ese ASN ya esta cargado en Mintsoft
