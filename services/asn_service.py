@@ -83,15 +83,19 @@ class MintsoftAsnService:
 
         po_number = df.iloc[1, 0] #2da fila, 1er columna
         asn_number = df.iloc[1, 1] #2da fila, 2da columna
-        carton_amount = df.iloc[:, 5].nunique()
+        carton_amount = df.iloc[:, 4].nunique()
 
         # Listado de Info del ASN para subir a Mintsoft
-        qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
+        qty_per_sku = df.groupby(df.columns[2])[df.columns[5]].sum().reset_index()
         qty_per_sku.columns = ["SKU", "Quantity"]
         asn_items = qty_per_sku.to_dict(orient="records")
 
         # Crear las cajas con formato: asn_number - numero de caja
         asn_cartons = [f"{asn_number}-{i}" for i in range(1, carton_amount + 1)]
+
+        # Delivery Date y Shipping Detail
+        delivery_date = df.iloc[0, 9]
+        shipping_detail = df.iloc[1, 6]
 
         # Comparacion para ver si ese ASN ya esta cargado en Mintsoft
         current_mint_asns = self.client.get_asns()
@@ -106,14 +110,14 @@ class MintsoftAsnService:
         print("ASN no existe en Mintsoft, cargando informacion...")
 
         print("Creando cajas")
-        self.create_cartons(asn_cartons)
+        # self.create_cartons(asn_cartons)
 
         print(f"Creando ASN - {asn_number}")
         mintsoft_payload = {
             "WarehouseId": 3,                       # General / Wholesale
             "POReference": asn_number,              # AsnNumber
             "Supplier": "XoroSoft Migration",
-            "EstimatedDelivery": "",
+            "EstimatedDelivery": delivery_date,
             "GoodsInType": "Carton",
             "Quantity": len(asn_cartons),
             "ClientId": 4,                          # 4 para Holiday Company
@@ -127,7 +131,8 @@ class MintsoftAsnService:
             "asn_number": asn_number,
             "po_number": po_number,
             "asn_items": asn_items,
-            "carton_amount": carton_amount + 1
+            "carton_amount": carton_amount + 1,
+            "shipping_detail": shipping_detail
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
@@ -172,7 +177,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{asn_number}_{data["carton_amount"]}Cartons"
+                    "RefNumber": f"{data["shipping_details"]}_{data["carton_amount"]} Cartons"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
