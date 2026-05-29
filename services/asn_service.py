@@ -95,9 +95,13 @@ class MintsoftAsnService:
         # qty_per_sku.columns = ["SKU", "Quantity"]
         # asn_items = qty_per_sku.to_dict(orient="records")
 
-        qty_per_sku_per_carton = df.groupby([df.columns[2], df.columns[5]])[df.columns[6]].sum().reset_index()
+        qty_per_sku_per_carton = (
+            df.groupby([df.columns[2], df.columns[5]])[df.columns[6]]
+            .sum()
+            .reset_index()
+        )
         qty_per_sku_per_carton.columns = ["SKU", "Carton", "Quantity"]
-        qty_per_sku_per_carton = qty_per_sku_per_carton.drop(columns="Carton")
+        xoro_lines = qty_per_sku_per_carton.to_dict(orient="records")
 
         # Lista de { "SKU": ..., "Quantity": ... }
         asn_items = qty_per_sku_per_carton.to_dict(orient="records")
@@ -138,8 +142,7 @@ class MintsoftAsnService:
         xoro_template_info = {
             "asn_number": asn_number,
             "po_number": po_number,
-            "asn_items": asn_items,
-            "carton_per_sku": carton_per_sku
+            "asn_items": xoro_lines,
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
         self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
@@ -150,7 +153,6 @@ class MintsoftAsnService:
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
         asn_number = data["asn_number"]
         po_number = data["po_number"]
-        carton_per_sku = data["carton_per_sku"]
         items = data["asn_items"]
 
         if not items:
@@ -186,7 +188,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{asn_number}-{carton_per_sku[item['SKU']]}"
+                    "RefNumber": f"{asn_number}-{item["Carton"]}"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")
