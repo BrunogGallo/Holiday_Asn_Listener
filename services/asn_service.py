@@ -91,10 +91,12 @@ class MintsoftAsnService:
             .to_dict()
         )
 
-        # qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
-        # qty_per_sku.columns = ["SKU", "Quantity"]
-        # asn_items = qty_per_sku.to_dict(orient="records")
+        # Listado de Info del ASN para subir a Mintsoft
+        qty_per_sku = df.groupby(df.columns[2])[df.columns[6]].sum().reset_index()
+        qty_per_sku.columns = ["SKU", "Quantity"]
+        asn_items = qty_per_sku.to_dict(orient="records")
 
+        # Listado de Info del ASN para subir a Xorosoft
         qty_per_sku_per_carton = (
             df.groupby([df.columns[2], df.columns[5]])[df.columns[6]]
             .sum()
@@ -102,9 +104,6 @@ class MintsoftAsnService:
         )
         qty_per_sku_per_carton.columns = ["SKU", "Carton", "Quantity"]
         xoro_lines = qty_per_sku_per_carton.to_dict(orient="records")
-
-        # Lista de { "SKU": ..., "Quantity": ... }
-        asn_items = qty_per_sku_per_carton.to_dict(orient="records")
 
         # Crear las cajas con formato: asn_number - numero de caja
         asn_cartons = [f"{asn_number}-{i}" for i in range(1, carton_amount + 1)]
