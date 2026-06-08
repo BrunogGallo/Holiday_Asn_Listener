@@ -95,6 +95,7 @@ class MintsoftAsnService:
 
         # Delivery Date y Shipping Detail
         delivery_date = df.columns[10]
+        print(delivery_date)
         shipping_detail = df.iloc[1, 6]
 
         # Comparacion para ver si ese ASN ya esta cargado en Mintsoft
