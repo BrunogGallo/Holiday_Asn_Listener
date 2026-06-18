@@ -45,7 +45,7 @@ SMTP_PORT     = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER     = os.getenv("SMTP_USER")          # e.g. "ops@the5411.com"
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")      # Gmail app password or SMTP password
 SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER)
-XORO_EMAIL_TO = os.getenv("XORO_EMAIL_TO", "bgallo@the5411.com")
+XORO_EMAIL_TO = os.getenv("XORO_EMAIL_TO", "lrebollo@the5411.com")
 
 
 class MintsoftAsnService:
@@ -111,7 +111,7 @@ class MintsoftAsnService:
         print("ASN no existe en Mintsoft, cargando informacion...")
 
         print("Creando cajas")
-        # self.create_cartons(asn_cartons)
+        self.create_cartons(asn_cartons)
 
         print(f"Creando ASN - {asn_number}")
         mintsoft_payload = {

@@ -16,7 +16,7 @@ IMAP_PORT = int(os.environ.get("IMAP_PORT", "993"))
 IMAP_USERNAME = os.environ.get("IMAP_USERNAME")
 IMAP_PASSWORD = os.environ.get("IMAP_PASSWORD")
 IMAP_FOLDER = os.environ.get("IMAP_FOLDER", "INBOX")
-IMAP_POLL_INTERVAL = int(os.environ.get("IMAP_POLL_INTERVAL", "34200")) # Revisa casilla cada 12h
+IMAP_POLL_INTERVAL = int(os.environ.get("IMAP_POLL_INTERVAL", "34200"))  # Revisa casilla cada 12h
 IMAP_FROM_FILTER = os.environ.get("IMAP_FROM_FILTER")        # opcional
 IMAP_SUBJECT_FILTER = os.environ.get("IMAP_SUBJECT_FILTER")  # opcional
 
@@ -31,23 +31,17 @@ PROCESSED_UIDS: set[str] = set()
 
 
 # ============================================================
-# Pipeline de procesamiento (2 etapas en 2 threads):
-#   1) extraer_datos_archivo  ->  lee el adjunto y arma un dict con los datos
-#   2) formatear_y_enviar     ->  transforma al formato destino y reenvía
-# Las etapas se encadenan con add_done_callback: cuando termina la 1,
-# se dispara la 2 en otro thread del executor.
+# Procesamiento del adjunto.
+# Cada email matcheado se procesa en un thread del executor para no
+# bloquear el loop IMAP. Toda la lógica (cargar a Mintsoft, generar el
+# template Xoro y enviarlo por mail) vive en MintsoftAsnService.
 # ============================================================
-def extraer_datos_archivo(email_data):
-    
-    """Etapa 1: levanta el adjunto (xlsx/csv) y devuelve los datos extraídos.
-
-    Retorna un dict con la info que necesita la etapa 2, o None si no hay
-    nada que procesar. Lo que retorne acá llega tal cual a `formatear_y_enviar`.
-    """
+def procesar_email(email_data):
+    """Levanta el adjunto (xlsx/csv) y lo manda a procesar al service."""
     try:
         print(f"📧 Email recibido | from={email_data['from']} | subject={email_data['subject']!r}")
 
-        # 1) Buscar el adjunto que nos interesa (Excel o CSV)
+        # Buscar el adjunto que nos interesa (Excel o CSV)
         asn_data = None
         for att in email_data["attachments"]:
             nombre = (att["filename"] or "").lower()
@@ -57,74 +51,15 @@ def extraer_datos_archivo(email_data):
 
         if not asn_data:
             print("⚠️  No hay adjunto xlsx/xls/csv; nada que procesar")
-            return None
+            return
 
         service.mintsoft_asn_processing(asn_data)
-
-        # Armamos el dict que recibe la etapa 2. Es el contrato entre
-        # extraer_datos_archivo() y formatear_y_enviar().
-        datos_extraidos = {
-            "email_uid": email_data["uid"],
-            "remitente": email_data["from"],
-            "filename": asn_data["filename"],
-            "raw_bytes": asn_data["content"],
-        }
-
-        print(f"✅ Etapa 1 OK | archivo={asn_data['filename']}")
-        return datos_extraidos
+        print(f"✅ Procesado OK | archivo={asn_data['filename']}")
 
     except Exception as e:
-        print(f"❌ Error en etapa 1 (extracción): {e}")
-        return None
+        print(f"❌ Error procesando email: {e}")
 
 
-def formatear_y_enviar(datos_extraidos):
-    """Etapa 2: arma el archivo en el formato destino y lo reenvía por mail."""
-    try:
-        print(f"🛠  Etapa 2 iniciada | uid={datos_extraidos['email_uid']}")
-
-        # ------------------------------------------------------
-        # TODO: transformar `datos_extraidos["filas"]` al formato deseado
-        #   filas_destino = transformar(datos_extraidos["filas"])
-        #   archivo_salida = generar_xlsx(filas_destino)   # o csv/json/etc
-        # ------------------------------------------------------
-
-        # ------------------------------------------------------
-        # TODO: reenviar por mail (cuando definas el destinatario/canal)
-        #   enviar_mail(
-        #       destinatario="...",
-        #       asunto="...",
-        #       cuerpo="...",
-        #       adjunto=archivo_salida,
-        #       filename="resultado.xlsx",
-        #   )
-        # ------------------------------------------------------
-
-        print("✅ Etapa 2 OK | archivo formateado y reenviado")
-
-    except Exception as e:
-        print(f"❌ Error en etapa 2 (formateo/envío): {e}")
-
-
-def _on_extraccion_completa(future):
-    """Callback que dispara la etapa 2 cuando termina la etapa 1.
-
-    Se ejecuta en el mismo thread que terminó la etapa 1, así que solo
-    re-submitea al executor para que la etapa 2 corra en otro thread.
-    """
-    try:
-        datos_extraidos = future.result()
-        if datos_extraidos is None:
-            return  # nada que formatear
-        executor.submit(formatear_y_enviar, datos_extraidos)
-    except Exception as e:
-        print(f"❌ Error encadenando etapas: {e}")
-
-
-# ============================================================
-# Listener IMAP en background (mismo patrón que tu webhook:
-# trabajo pesado en threads, dispatch rápido)
-# ============================================================
 def chequear_emails():
     """Se conecta a la casilla, lee no leídos y dispara procesar_email."""
     if not (IMAP_USERNAME and IMAP_PASSWORD):
@@ -155,8 +90,8 @@ def chequear_emails():
             if not msg.from_ or not subject:
                 continue
 
-            # Tu lógica solo procesa mails con adjunto xlsx/xls/csv;
-            # si no tiene, también lo ignoramos sin ruido.
+            # Solo procesamos mails con adjunto xlsx/xls/csv; si no tiene,
+            # lo ignoramos sin ruido.
             if not any(
                 (a.filename or "").lower().endswith((".xlsx", ".xls", ".csv"))
                 for a in msg.attachments
@@ -184,10 +119,8 @@ def chequear_emails():
                     for a in msg.attachments
                 ],
             }
-            # Etapa 1 en un thread; al terminar, el callback dispara la
-            # etapa 2 en otro thread del mismo executor.
-            future = executor.submit(extraer_datos_archivo, email_data)
-            future.add_done_callback(_on_extraccion_completa)
+            # Procesamos en un thread del executor para no bloquear el loop.
+            executor.submit(procesar_email, email_data)
 
 
 def loop_imap():
