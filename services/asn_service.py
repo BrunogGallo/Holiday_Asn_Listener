@@ -180,7 +180,7 @@ class MintsoftAsnService:
                     "AsnNumber": asn_number,
                     "PONumber": po_number,
                     "ItemNumber": item["SKU"],
-                    "QtyToReceive": item["Quantity"],
+                    "QtyToReceive": 1, # Ajusto la cantidad a 1 para que no genere errores de sobrerecibir en la PO
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
