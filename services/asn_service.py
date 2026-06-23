@@ -82,8 +82,10 @@ class MintsoftAsnService:
             raise ValueError(f"Tipo de archivo no soportado: {file_name}")
 
         po_number = df.iloc[1, 0] #2da fila, 1er columna
-        asn_number = df.iloc[1, 1] #2da fila, 2da columna
         carton_amount = df.iloc[:, 4].nunique()
+        
+        # A pedido de la marca, usamos el SHIPPING DETAIL como ASN NUMBER
+        shipping_detail = df.iloc[1, 6]
 
         # Listado de Info del ASN para subir a Mintsoft
         qty_per_sku = df.groupby(df.columns[2])[df.columns[5]].sum().reset_index()
@@ -91,17 +93,21 @@ class MintsoftAsnService:
         asn_items = qty_per_sku.to_dict(orient="records")
 
         # Crear las cajas con formato: asn_number - numero de caja
-        asn_cartons = [f"{asn_number}-{i}" for i in range(1, carton_amount + 1)]
+        asn_cartons = [f"{shipping_detail}-{i}" for i in range(1, carton_amount + 1)]
 
         # Delivery Date y Shipping Detail
-        delivery_date = df.columns[10]
-        print(delivery_date)
-        shipping_detail = df.iloc[1, 6]
+# Option 1: explicit check
+        if len(df.columns) > 10:
+            delivery_date = df.columns[10]
+            print(delivery_date)
+        else:
+            delivery_date = None
+            print(f"DataFrame only has {len(df.columns)} columns")
 
         # Comparacion para ver si ese ASN ya esta cargado en Mintsoft
-        current_mint_asns = self.client.get_asns()
+        current_mint_asns = self.client.get_holiday_asns()
         asn_exists = any(
-            item.get("POReference") == asn_number for item in current_mint_asns
+            item.get("POReference") == shipping_detail for item in current_mint_asns
         )
 
         if asn_exists:
@@ -113,10 +119,10 @@ class MintsoftAsnService:
         print("Creando cajas")
         self.create_cartons(asn_cartons)
 
-        print(f"Creando ASN - {asn_number}")
+        print(f"Creando ASN - {shipping_detail}")
         mintsoft_payload = {
             "WarehouseId": 3,                       # General / Wholesale
-            "POReference": asn_number,              # AsnNumber
+            "POReference": shipping_detail,              # AsnNumber
             "Supplier": "XoroSoft Migration",
             "EstimatedDelivery": delivery_date,
             "GoodsInType": "Carton",
@@ -129,19 +135,19 @@ class MintsoftAsnService:
 
         # --- Generar CSV de Xoro y enviarlo por mail ---
         xoro_template_info = {
-            "asn_number": asn_number,
+            "asn_number": shipping_detail,
             "po_number": po_number,
             "asn_items": asn_items,
             "carton_amount": carton_amount + 1,
             "shipping_detail": shipping_detail
         }
         csv_path = self.prepare_xoro_asn_template(xoro_template_info)
-        self.send_xoro_csv_email(csv_path, asn_number, recipient=XORO_EMAIL_TO)
+        self.send_xoro_csv_email(csv_path, shipping_detail, recipient=XORO_EMAIL_TO)
 
         return None
 
     def prepare_xoro_asn_template(self, data, output_dir="xoro_templates"):
-        asn_number = data["asn_number"]
+        asn_number = data["shipping_detail"]
         po_number = data["po_number"]
         items = data["asn_items"]
 
@@ -178,7 +184,7 @@ class MintsoftAsnService:
                     "LocationName": location_name,
                     "ThirdPartyRefNo": asn_number,
                     "ThirdPartySource": "Mintsoft",
-                    "RefNumber": f"{data["shipping_detail"]}_{data["carton_amount"]} Cartons"
+                    "RefNumber": f"{asn_number}_{data["carton_amount"]} Cartons"
                 })
 
         print(f"Xoro ASN template generated: {output_path}")

@@ -97,8 +97,8 @@ class MintsoftAsnClient:
 
         return None
     
-    def get_asns(self):
-        url = f"{self.BASE_URL}/api/ASN/List?ClientId=4"
+    def get_holiday_asns(self):
+        url = f"{self.BASE_URL}/api/ASN/List?ClientId=4" # Solo trae ASN de Holiday
 
         response = requests.get(url, headers=self.headers())
         response.raise_for_status()
