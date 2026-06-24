@@ -164,10 +164,10 @@ class MintsoftAsnService:
             writer = csv.DictWriter(f, fieldnames=XORO_CSV_COLUMNS)
             writer.writeheader()
 
-            if asn_number.startswith("TST"):
+            if po_number.startswith("TST"):
                 store_name = "Test Store"
                 location_name = "TEST"
-            elif asn_number.startswith("USA"):
+            elif po_number.startswith("USA"):
                 store_name = "USA Warehouse"
                 location_name = "USA WAREHOUSE"
             else:
