@@ -54,6 +54,18 @@ class MintsoftAsnService:
         self.client = MintsoftAsnClient()
 
 
+    def check_cartons(self, raw_cartons):
+        asn_cartons = []
+        for carton in raw_cartons:
+
+            suffix = 1
+            while self.client.check_carton(f"{carton}-{suffix}"):
+                suffix += 1
+            carton = f"{carton}-{suffix}"
+            asn_cartons.append(carton)
+        
+        return asn_cartons
+
     def create_cartons(self, asn_cartons):
         for carton in asn_cartons:
             carton_data = {
@@ -65,7 +77,7 @@ class MintsoftAsnService:
             print(f"Creando la caja - {carton}")
             self.client.create_carton(carton_data)
         return None
-
+    
 
     def mintsoft_asn_processing(self, attachment):
 
@@ -81,7 +93,7 @@ class MintsoftAsnService:
         else:
             raise ValueError(f"Tipo de archivo no soportado: {file_name}")
 
-        po_number = df.iloc[0, 0] #2da fila, 1er columna
+        po_number = str(df.iloc[0, 0]) #1era fila, 1er columna (ignora header)
         carton_amount = df.iloc[:, 4].nunique()
         
         # A pedido de la marca, usamos el SHIPPING DETAIL como ASN NUMBER
@@ -93,7 +105,7 @@ class MintsoftAsnService:
         asn_items = qty_per_sku.to_dict(orient="records")
 
         # Crear las cajas con formato: asn_number - numero de caja
-        asn_cartons = [f"{shipping_detail}-{i}" for i in range(1, carton_amount + 1)]
+        asn_cartons = [f"HC-{po_number[-6:]}-{i}" for i in range(1, carton_amount + 1)]
 
         # Delivery Date y Shipping Detail
 # Option 1: explicit check
@@ -116,8 +128,11 @@ class MintsoftAsnService:
 
         print("ASN no existe en Mintsoft, cargando informacion...")
 
+        print("Check nombres de las cajas previo a crearlas")
+        indexed_asn_cartons = self.check_cartons(asn_cartons)
+
         print("Creando cajas")
-        self.create_cartons(asn_cartons)
+        self.create_cartons(indexed_asn_cartons)
 
         print(f"Creando ASN - {shipping_detail}")
         mintsoft_payload = {
@@ -126,9 +141,9 @@ class MintsoftAsnService:
             "Supplier": "XoroSoft Migration",
             "EstimatedDelivery": delivery_date,
             "GoodsInType": "Carton",
-            "Quantity": len(asn_cartons),
+            "Quantity": len(indexed_asn_cartons),
             "ClientId": 4,                          # 4 para Holiday Company
-            "Comments": ", ".join(asn_cartons),
+            "Comments": ", ".join(indexed_asn_cartons),
             "Items": asn_items,
         }
         self.client.create_asn(mintsoft_payload)
