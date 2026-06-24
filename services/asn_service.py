@@ -56,9 +56,9 @@ class MintsoftAsnService:
 
     def check_cartons(self, raw_cartons):
         asn_cartons = []
+        suffix = 1
         for carton in raw_cartons:
 
-            suffix = 1
             while self.client.check_carton(f"{carton}-{suffix}"):
                 suffix += 1
             carton = f"{carton}-{suffix}"
