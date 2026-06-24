@@ -81,11 +81,11 @@ class MintsoftAsnService:
         else:
             raise ValueError(f"Tipo de archivo no soportado: {file_name}")
 
-        po_number = df.iloc[1, 0] #2da fila, 1er columna
+        po_number = df.iloc[0, 0] #2da fila, 1er columna
         carton_amount = df.iloc[:, 4].nunique()
         
         # A pedido de la marca, usamos el SHIPPING DETAIL como ASN NUMBER
-        shipping_detail = df.iloc[1, 6]
+        shipping_detail = df.iloc[0, 6]
 
         # Listado de Info del ASN para subir a Mintsoft
         qty_per_sku = df.groupby(df.columns[2])[df.columns[5]].sum().reset_index()
