@@ -45,7 +45,10 @@ SMTP_PORT     = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER     = os.getenv("SMTP_USER")          # e.g. "ops@the5411.com"
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")      # Gmail app password or SMTP password
 SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER)
-XORO_EMAIL_TO = os.getenv("XORO_EMAIL_TO", "lrebollo@the5411.com")
+XORO_EMAIL_TO = os.getenv(
+    "XORO_EMAIL_TO",
+    "holiday-trading@the5411.com,mbivort@the5411.com,lrebollo@the5411.com",
+)
 
 
 class MintsoftAsnService:

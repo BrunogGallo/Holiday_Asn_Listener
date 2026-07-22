@@ -17,8 +17,14 @@ IMAP_USERNAME = os.environ.get("IMAP_USERNAME")
 IMAP_PASSWORD = os.environ.get("IMAP_PASSWORD")
 IMAP_FOLDER = os.environ.get("IMAP_FOLDER", "INBOX")
 IMAP_POLL_INTERVAL = int(os.environ.get("IMAP_POLL_INTERVAL", "34200"))  # Revisa casilla cada 12h
-IMAP_FROM_FILTER = os.environ.get("IMAP_FROM_FILTER")        # opcional
+IMAP_FROM_FILTER = os.environ.get("IMAP_FROM_FILTER")        # opcional, uno o varios mails separados por coma
 IMAP_SUBJECT_FILTER = os.environ.get("IMAP_SUBJECT_FILTER")  # opcional
+
+ALLOWED_SENDERS = (
+    {addr.strip().lower() for addr in IMAP_FROM_FILTER.split(",") if addr.strip()}
+    if IMAP_FROM_FILTER
+    else None
+)
 
 executor = ThreadPoolExecutor(max_workers=10)
 service = MintsoftAsnService()
@@ -68,8 +74,6 @@ def chequear_emails():
 
     # Filtros opcionales
     criteria_kwargs = {"seen": False}
-    if IMAP_FROM_FILTER:
-        criteria_kwargs["from_"] = IMAP_FROM_FILTER
     if IMAP_SUBJECT_FILTER:
         criteria_kwargs["subject"] = IMAP_SUBJECT_FILTER
 
@@ -88,6 +92,10 @@ def chequear_emails():
             # Workspace genera copias internas (scanners DLP, auditoría, etc.)
             # que llegan al INBOX con headers vacíos. Las ignoramos en silencio.
             if not msg.from_ or not subject:
+                continue
+
+            # Solo procesamos mails de remitentes habilitados (si se configuró la lista).
+            if ALLOWED_SENDERS and msg.from_.strip().lower() not in ALLOWED_SENDERS:
                 continue
 
             # Solo procesamos mails con adjunto xlsx/xls/csv; si no tiene,
